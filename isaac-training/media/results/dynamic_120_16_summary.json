@@ -8,9 +8,13 @@
     "env_dyn.local_range=[3.0,3.0,3.0]"
   ],
   "num_seeds": 2,
-  "return_mean": 3301.5126953125,
-  "episode_len_mean": 389.1499938964844,
+  "return_mean": 14041.2275390625,
+  "episode_len_mean": 1722.1500244140625,
   "reach_goal_rate": 0.0,
-  "collision_rate": 0.1250000037252903,
-  "truncated_rate": 0.875
+  "goal_contact_rate": 0.5,
+  "showcase_pass_rate": 0.800000011920929,
+  "evaluation_success_rate": 0.4750000089406967,
+  "collision_rate": 0.20000000298023224,
+  "truncated_rate": 0.800000011920929,
+  "goal_hold_steps": 5
 }

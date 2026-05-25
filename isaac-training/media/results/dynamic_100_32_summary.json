@@ -6,9 +6,13 @@
     "env_dyn.num_obstacles=32"
   ],
   "num_seeds": 2,
-  "return_mean": 3323.2001953125,
-  "episode_len_mean": 393.79998779296875,
+  "return_mean": 12624.65380859375,
+  "episode_len_mean": 1562.2249755859375,
   "reach_goal_rate": 0.0,
-  "collision_rate": 0.07500000111758709,
-  "truncated_rate": 0.9249999821186066
+  "goal_contact_rate": 0.3500000089406967,
+  "showcase_pass_rate": 0.6500000059604645,
+  "evaluation_success_rate": 0.32500000298023224,
+  "collision_rate": 0.3500000014901161,
+  "truncated_rate": 0.6500000059604645,
+  "goal_hold_steps": 5
 }

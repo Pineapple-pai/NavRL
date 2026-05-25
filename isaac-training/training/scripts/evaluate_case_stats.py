@@ -87,7 +87,7 @@ def extract_episode_stats(trajs, goal_hold_steps: int = 5):
 
     def take_first_episode(tensor: torch.Tensor):
         indices = first_done.to(tensor.device)
-        indices = indices.reshape(indices.shape + (1,) * (tensor.ndim - 2))
+        indices = indices.reshape(indices.shape + (1,) * (tensor.ndim - 1))
         return torch.take_along_dim(tensor, indices, dim=1).reshape(-1)
 
     traj_stats = {
@@ -153,6 +153,7 @@ def write_outputs(output_dir: str, case_name: str, checkpoint_path: str, overrid
         f.write(f"- overrides: `{ ' '.join(overrides) if overrides else '(none)' }`\n\n")
         f.write(f"- showcase pass 定义：`第一回合内曾接近目标，或未碰撞并以 truncated 结束`\n")
         f.write(f"- evaluation success 定义：`第一回合内连续 {summary.get('goal_hold_steps', 5)} 步进入目标区，且回合最终不是 terminated`\n\n")
+        f.write("- 统计范围说明：`本文件是多 seed 汇总结果；PNG/MP4 通常只对应单个 seed 的一次 20 环境展示回放，因此数值不一定与本表完全相等。`\n\n")
         f.write("| 指标 | 数值 |\n")
         f.write("| --- | --- |\n")
         f.write(f"| 平均回报 | `{summary['return_mean']:.4f}` |\n")
@@ -323,6 +324,7 @@ def main():
             f.write(f"- overrides: `{ ' '.join(overrides) if overrides else '(none)' }`\n\n")
             f.write(f"- showcase pass 定义：`第一回合内曾接近目标，或未碰撞并以 truncated 结束`\n")
             f.write(f"- evaluation success 定义：`第一回合内连续 {args.goal_hold_steps} 步进入目标区，且回合最终不是 terminated`\n\n")
+            f.write("- 统计范围说明：`本文件是多 seed 汇总结果；PNG/MP4 通常只对应单个 seed 的一次 20 环境展示回放，因此数值不一定与本表完全相等。`\n\n")
             f.write("| 指标 | 数值 |\n")
             f.write("| --- | --- |\n")
             f.write(f"| 平均回报 | `{summary['return_mean']:.4f}` |\n")
