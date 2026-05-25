@@ -1,13 +1,20 @@
-# NavRL: Learning Safe Flight in Dynamic Environments
+# NavRL：动态环境中的安全飞行学习
 [![Python](https://img.shields.io/badge/python-3.10-4B8BBE.svg)](https://docs.python.org/3/whatsnew/3.10.html)
 [![ROS1](https://img.shields.io/badge/ROS1-Noetic-green.svg)](https://wiki.ros.org/noetic)
 [![ROS2](https://img.shields.io/badge/ROS2-Humble-F39C12.svg)](https://docs.ros.org/en/humble/index.html)
 [![IsaacSim](https://img.shields.io/badge/IsaacSim-NVIDIA-C0392B.svg)](https://docs.omniverse.nvidia.com/isaacsim/latest/overview.html)
 [![Linux platform](https://img.shields.io/badge/platform-Ubuntu-27AE60.svg)](https://releases.ubuntu.com/22.04/)
 
+这是一个基于开源 `NavRL` 框架整理和扩展的中文项目说明仓库，用于展示我在 `Isaac Sim` 环境下围绕四旋翼无人机强化学习动态避障所做的训练流程改进、评估脚本补充、展示素材整理与文档重构工作。
 
+原始开源工作与论文链接保留如下：
 
-Welcome to the NavRL repository! This repository provides the implementation of the [NavRL](https://ieeexplore.ieee.org/document/10904341) framework, designed to enable robots to safely navigate dynamic environments using Reinforcement Learning. While the original paper focuses on UAV navigation, the NavRL can be extended to any robot that adopts a velocity-based control system.
+- 原论文：[`NavRL: Learning Safe Flight in Dynamic Environments`](https://ieeexplore.ieee.org/document/10904341)
+- IEEE Xplore：<https://ieeexplore.ieee.org/document/10904341>
+- 预印本：<https://arxiv.org/pdf/2409.15634>
+- YouTube 演示：<https://youtu.be/EbeJW8-YlvI>
+- Bilibili 演示：<https://www.bilibili.com/video/BV1gsA9eTErz/?share_source=copy_web&vd_source=1333db331406abb1b5d4cece1e253427>
+- 上游项目仓库：<https://github.com/Zhefan-Xu/NavRL>
 
 <table>
   <tr>
@@ -17,26 +24,158 @@ Welcome to the NavRL repository! This repository provides the implementation of 
   </tr>
 </table>
 
+## 项目说明
 
-For additional details, please refer to the related paper available here:
+这个仓库包含两部分内容：
 
-Zhefan Xu, Xinming Han, Haoyu Shen, Hanyu Jin, and Kenji Shimada, "NavRL: Learning Safe Flight in Dynamic Environments”, *IEEE Robotics and Automation Letters (RA-L)*, 2025. [\[IEEE Xplore\]](https://ieeexplore.ieee.org/document/10904341) [\[preprint\]](https://arxiv.org/pdf/2409.15634) [\[YouTube\]](https://youtu.be/EbeJW8-YlvI) [\[BiliBili\]](https://www.bilibili.com/video/BV1gsA9eTErz/?share_source=copy_web&vd_source=1333db331406abb1b5d4cece1e253427)
+- **上游 NavRL 原始能力**
+  - 包括论文对应的训练、部署和 ROS 相关工程结构
+- **我基于 `isaac-training` 子项目做的改进与整理**
+  - 强化学习训练流程调整
+  - 环境逻辑与奖励函数修改
+  - 批量回放、统计评估与展示脚本
+  - 中文说明文档、复现文档、简历/毕业设计材料整理
 
+更准确地说，这个项目不是“从零发明一个全新的 RL 算法”，而是**基于现有 NavRL / OmniDrones 框架，对 Isaac Sim 训练链路做工程化改进与结果整理**，使其更适合：
 
-## News
-* **2025-04-06:** We release easy-to-run Python scripts that allows users to quickly run demos.
-* **2025-02-23:** The GitHub code, video demos, and relavant papers for our NavRL framework are released. The authors will actively maintain and update this repo!
+- 实验复现
+- 行为回放
+- 结果统计
+- README 展示
+- 简历 / 面试 / 毕业设计材料整理
 
-## Table of Contents
- - [Training in NVIDIA Isaac Sim](#I-Training-in-NVIDIA-Isaac-Sim)
- - [Deployment Virtual Environment](#II-Deployment-Virtual-Environment)
- - [NavRL ROS1 Deployment](#III-NavRL-ROS1-Deployment)
- - [NavRL ROS2 Deployment](#IV-NavRL-ROS2-Deployment)
- - [Citation and Reference](#V-Citation-and-Reference)
- - [Acknowledgement](#VI-Acknowledgement)
+## 我在这个仓库中的主要工作
 
-## NavRL Quick Demos in 3 Minutes
-We provide a pretrained model and easy-to-run Python scripts for quick demos of the NavRL framework.
+我主要围绕 `isaac-training` 子目录做了以下工作：
+
+- **环境重置逻辑修改**
+  - 让无人机更倾向于真正穿越障碍区，而不是沿地图边缘绕飞
+- **奖励函数修正**
+  - 增加姿态稳定性相关惩罚，减轻首次避障后摇晃和后续碰撞问题
+- **动态障碍生成约束**
+  - 对起点/终点走廊进行保护，减少不合理场景分布
+- **训练与回放工作流优化**
+  - 改善 checkpoint 恢复、回放脚本与展示导出流程
+- **批量评估能力补充**
+  - 输出 `csv/json/md` 结果文件，支持更正式的结果表达
+- **项目展示材料整理**
+  - 补充中文 README、复现实验文档、实习版项目说明和毕业设计版说明
+
+## 当前重点展示内容
+
+如果你主要关心我这次实际修改的部分，建议优先查看：
+
+- [`isaac-training/README_CN.md`](isaac-training/README_CN.md)
+- [`isaac-training/INTERNSHIP_PROJECT_CN.md`](isaac-training/INTERNSHIP_PROJECT_CN.md)
+- [`isaac-training/GRADUATION_DESIGN_CN.md`](isaac-training/GRADUATION_DESIGN_CN.md)
+- [`isaac-training/REPRODUCIBILITY_CN.md`](isaac-training/REPRODUCIBILITY_CN.md)
+- [`isaac-training/PROJECT_BOUNDARY_CN.md`](isaac-training/PROJECT_BOUNDARY_CN.md)
+
+其中：
+
+- **`README_CN.md`** 适合作为项目总览
+- **`INTERNSHIP_PROJECT_CN.md`** 适合简历和面试表达
+- **`GRADUATION_DESIGN_CN.md`** 适合毕业设计 / 答辩材料整理
+- **`REPRODUCIBILITY_CN.md`** 适合说明如何复现实验与展示素材
+- **`PROJECT_BOUNDARY_CN.md`** 适合说明个人贡献边界，避免夸大表述
+
+## 当前可展示结果
+
+在 `isaac-training` 子项目中，我已经整理出以下代表性展示材料：
+
+### 代表性截图
+
+- ![静态基线](isaac-training/media/static_120_baseline.png)
+- ![中等动态密度](isaac-training/media/dynamic_120_16_medium_density.png)
+- ![动态压力测试](isaac-training/media/dynamic_100_32_stress_test.png)
+- ![高密度混合场景](isaac-training/media/dynamic_120_32_high_density_mixed.png)
+
+### 代表性统计结果
+
+- [`isaac-training/media/results/static_120_summary.md`](isaac-training/media/results/static_120_summary.md)
+- [`isaac-training/media/results/dynamic_120_16_summary.md`](isaac-training/media/results/dynamic_120_16_summary.md)
+- [`isaac-training/media/results/dynamic_100_32_summary.md`](isaac-training/media/results/dynamic_100_32_summary.md)
+- [`isaac-training/media/results/dynamic_120_32_summary.md`](isaac-training/media/results/dynamic_120_32_summary.md)
+
+### 当前可对外表达的结果结论
+
+基于当前已整理出的实验记录与展示材料，可以较稳妥地表达为：
+
+- 纯静态高密度障碍场景下，策略已具备较稳定穿越能力
+- 引入动态障碍后，成功率会明显受姿态稳定性和扰动恢复能力影响
+- 在代表性的 `120` 个静态障碍 + `32` 个动态障碍混合场景中，已经整理出可展示视频、截图和批量统计结果
+- 对外表述时应区分：
+  - **`showcase pass`**：更适合视频/截图展示
+  - **`evaluation success`**：更适合正式结果统计、论文或答辩表述
+
+## 仓库结构建议阅读顺序
+
+### 如果你想了解原始开源项目
+
+优先看：
+
+- 原论文与视频链接
+- 下方“原始开源能力说明”部分
+- `ros1/` 与 `ros2/` 目录
+- `quick-demos/` 目录
+
+### 如果你想了解我的修改与项目展示部分
+
+优先看：
+
+- `isaac-training/README_CN.md`
+- `isaac-training/training/scripts/env.py`
+- `isaac-training/training/scripts/train.py`
+- `isaac-training/training/scripts/evaluate_case_stats.py`
+- `isaac-training/training/scripts/export_demo_video.py`
+- `isaac-training/capture_demo_videos.sh`
+- `isaac-training/evaluate_demo_cases.sh`
+
+## 快速入口
+
+### 1. 查看中文项目说明
+
+```bash
+xdg-open /home/p/CascadeProjects/NavRL/isaac-training/README_CN.md
+```
+
+### 2. 训练入口
+
+```bash
+bash /home/p/CascadeProjects/NavRL/isaac-training/train.sh
+```
+
+### 3. 回放入口
+
+```bash
+bash /home/p/CascadeProjects/NavRL/isaac-training/back.sh
+```
+
+### 4. 批量导出展示素材
+
+```bash
+bash /home/p/CascadeProjects/NavRL/isaac-training/capture_demo_videos.sh static_120_success
+bash /home/p/CascadeProjects/NavRL/isaac-training/capture_demo_videos.sh dynamic_120_16_failure_analysis
+bash /home/p/CascadeProjects/NavRL/isaac-training/capture_demo_videos.sh dynamic_100_32_stress
+bash /home/p/CascadeProjects/NavRL/isaac-training/capture_demo_videos.sh dynamic_120_32_success
+```
+
+### 5. 批量统计结果
+
+```bash
+bash /home/p/CascadeProjects/NavRL/isaac-training/evaluate_demo_cases.sh static_120
+bash /home/p/CascadeProjects/NavRL/isaac-training/evaluate_demo_cases.sh dynamic_120_16
+bash /home/p/CascadeProjects/NavRL/isaac-training/evaluate_demo_cases.sh dynamic_100_32
+bash /home/p/CascadeProjects/NavRL/isaac-training/evaluate_demo_cases.sh dynamic_120_32
+```
+
+## 原始开源能力说明
+
+以下内容主要对应上游 NavRL 仓库原本提供的能力，我在这里保留核心链接与入口，便于读者继续追溯原始工作。
+
+## NavRL 三分钟快速演示
+
+上游项目提供了预训练模型和快速运行脚本，用于快速体验 NavRL 框架。
 
 <table>
   <tr>
@@ -46,218 +185,104 @@ We provide a pretrained model and easy-to-run Python scripts for quick demos of 
   </tr>
 </table>
 
-To get started, please follow the steps in [Deployment Virtual Environment](#II-Deployment-Virtual-Environment) to set up the Conda environment. Once the setup is complete, you can run the following three demos with the following commands:
-```
-conda activate NavRL
-cd NavRL/quick-demos
+完成环境配置后，可通过以下命令运行快速演示：
 
-# DEMO I: Navigating to a predefined goal point
+```bash
+conda activate NavRL
+cd quick-demos
+
+# DEMO I: 飞向预定义目标点
 python simple-navigation.py
 
-# DEMO II: Navigating to dynamically/randomly assigned goal points
+# DEMO II: 飞向动态/随机目标点
 python random-navigation.py
 
-# DEMO III: Multi-robot navigation
+# DEMO III: 多机器人导航
 python multi-robot-navigation.py
 ```
 
-## I. Training in NVIDIA Isaac Sim
-This section provides the steps for training your own RL agent with the NavRL framework in Isaac Sim. **If you are not interested in training the agent yourself, feel free to skip this section and jump straight to the deployment section.**
+## I. 在 NVIDIA Isaac Sim 中训练
 
+这一部分对应上游训练说明，适合希望从头运行 NavRL 训练链路的读者。
 
-### Isaac Sim Installation
-This project was developed using **Isaac Sim version 2023.1.0-hotfix.1**, released in November 2023. **Please make sure you download and use this exact version, as using a different version may lead to errors due to version incompatibility.** Also, ensure that you have [conda](https://docs.anaconda.com/miniconda/) installed.
+### Isaac Sim 安装说明
 
-If you have already downloaded Isaac Sim version 2023.1.0-hotfix.1, you can skip the following steps. Otherwise, please follow the instructions below to download the legacy version of Isaac Sim, as the official installation does not support legacy version downloads. 
+上游项目原始说明基于 **Isaac Sim 2023.1.0-hotfix.1**。如果你希望严格按论文对应版本复现，请优先参考原始环境要求。
 
-To download Isaac Sim version 2023.1.0-hotfix.1:
+原 README 中的说明要点包括：
 
-a. First, follow the steps on [this link](https://docs.isaacsim.omniverse.nvidia.com/latest/installation/install_container.html) to complete the Docker Container Setup. 
+- 使用指定 Isaac Sim 版本
+- 先完成 Docker 容器环境准备
+- 再将 Isaac Sim 内容复制到本地目录
 
-b. Then, download the Isaac Sim to your docker container:
-```
-docker pull nvcr.io/nvidia/isaac-sim:2023.1.0-hotfix.1
+你也可以直接参考官方文档：
 
-docker run --name isaac-sim --entrypoint bash -it --runtime=nvidia --gpus all -e "ACCEPT_EULA=Y" --rm --network=host \
-    -e "PRIVACY_CONSENT=Y" \
-    -v ~/docker/isaac-sim/cache/kit:/isaac-sim/kit/cache:rw \
-    -v ~/docker/isaac-sim/cache/ov:/root/.cache/ov:rw \
-    -v ~/docker/isaac-sim/cache/pip:/root/.cache/pip:rw \
-    -v ~/docker/isaac-sim/cache/glcache:/root/.cache/nvidia/GLCache:rw \
-    -v ~/docker/isaac-sim/cache/computecache:/root/.nv/ComputeCache:rw \
-    -v ~/docker/isaac-sim/logs:/root/.nvidia-omniverse/logs:rw \
-    -v ~/docker/isaac-sim/data:/root/.local/share/ov/data:rw \
-    -v ~/docker/isaac-sim/documents:/root/Documents:rw \
-    nvcr.io/nvidia/isaac-sim:2023.1.0-hotfix.1
-```
-c. Move the downloaded Isaac Sim from the docker container to your local machine:
-```
-bash docker ps # check your container ID in another terminal
+- Isaac Sim 安装文档：<https://docs.omniverse.nvidia.com/isaacsim/latest/overview.html>
+- 容器安装说明：<https://docs.isaacsim.omniverse.nvidia.com/latest/installation/install_container.html>
 
-# Replace <id_container> with the output from the previous command
-docker cp <id_container>:isaac-sim/. /path/to/local/folder # absolute path
-```
+### NavRL 训练环境搭建
 
-
-Isaac Sim version 2023.1.0-hotfix.1 is now installed on your local machine.
-
-### NavRL Training Setup
-To set up the NavRL framework, clone the repository and follow these steps (this process may take several minutes):
-```
-# Set the ISAACSIM_PATH environment variable
-echo 'export ISAACSIM_PATH="path/to/isaac_sim-2023.1.0-hotfix.1"' >> ~/.bashrc
-
+```bash
 cd NavRL/isaac-training
 bash setup.sh
 ```
-After the setup completes, you should have created a virtual environment named ```NavRL```.
 
-### Verify Installation and Run a Training Example
-Use the default parameter to run a training example with 2 robots to verify installation.
+完成后应创建名为 `NavRL` 的 Conda 环境。
 
-```
-# Activate NavRL virtual environment
+### 验证训练示例
+
+```bash
 conda activate NavRL
-
-# Run a training example with default settings
 python training/scripts/train.py
 ```
-If the repo is installed correctly, you should be able to see the Isaac Sim window as shown below: 
 
-![isaac-training-window](https://github.com/user-attachments/assets/14a4d8a8-e607-434f-af9d-42d0d945e8d7)
+## II. 部署环境
 
+如果你只希望运行部署或演示而不自己训练，可使用上游提供的部署环境配置：
 
-### Train your own RL agent
-The training environment settings and hyerparameters can be found in ```NavRL/isaac-training/training/cfg```.
-
-The following example demonstrates training with 1024 robots, 350 static obstacles, and 80 dynamic obstacles (an RTX 4090 is required). We recommend using [Wandb](https://wandb.ai/site/) to monitor your training and evaluation statistics.
-```
-python training/scripts/train.py headless=True env.num_envs=1024 env.num_obstacles=350 \
-env_dyn.num_obstacles=80 wandb.mode=online
-```
-After training for a sufficient amount of time, you should observe the robots learning to avoid collisions:
-
-https://github.com/user-attachments/assets/2294bd94-69b3-4ce8-8e91-0118cfae9bcd
-
-
-## II. Deployment Virtual Environment
-This section provides the minimum conda environment setup required to deploy ```NavRL``` (including running on a real robot). If you have already created the  ```NavRL``` conda environment during the [Isaac training step](#I-Training-in-NVIDIA-Isaac-Sim), you can skip this section. To create the conda environment, run the following commands:
-```
+```bash
 cd NavRL/isaac-training
 bash setup_deployment.sh
 ```
-Once the setup is complete, a conda environment named ```NavRL``` should be created. You can verify the installation by activating the environment:
-```
-conda activate NavRL
-```
 
+## III. ROS1 部署
 
-## III. NavRL ROS1 Deployment
-This section demonstrates an example of deploying NavRL with ROS1 and Gazebo using a quadcopter robot. Ensure that your system meets the following requirements:
+上游仓库包含基于 ROS1 + Gazebo 的四旋翼部署示例，适用环境：
 
 - Ubuntu 20.04 LTS
 - ROS1 Noetic
 
-First, install dependencies and copy the ```ros1``` folder from this repository into your catkin workspace.
-```
-sudo apt-get install ros-noetic-mavros*
+更多细节请继续查看仓库中的 `ros1/` 目录与原始脚本说明。
 
-cp -r ros1 /path/to/catkin_ws/src
-catkin_make
-```
-Then, set the environment vairable for Gazebo models.
-```
-echo 'source /path/to/ros1/uav_simulator/gazeboSetup.bash' >> ~/.bashrc
-```
-Note that the environment variable should be set within the catkin_ws. For example, the correct ```~./.bashrc``` script should be  ```source ~/catkin_ws/src/ros1/uav_simulator/gazeboSetup.bash``` instead of ```source path/to/NavRL/ros1/uav_simulator/gazeboSetup.bash```).
+## IV. ROS2 部署
 
-Finally, start the simulation and deploy NavRL navigation.
-```
-# Launch the gazebo simulator
-roslaunch uav_simulator start.launch
+上游仓库也包含基于 ROS2 + Isaac Sim 的部署示例，适用环境：
 
-# Start the perception and safety module
-roslaunch navigation_runner safety_and_perception_sim.launch
-
-# Run the navigation node
-conda activate NavRL
-rosrun navigation_runner navigation_node.py
-```
-A Gazebo window will display the environment while an RViz window presents the data. Use RViz's ```2D Nav Goal``` tool to set the navigation target, as shown in the video below (note: the default environment and settings might be different from the video):
-
-
-https://github.com/user-attachments/assets/b7cc7e2e-c01d-4e44-87e3-97271a3aaa0f
-
-
-To change the environment settings, review the launch file at ```ros1/uav_simulator/launch/start.launch```. The parameters for each module are located in ```ros1/navigation_runner/cfg/*.yaml``` configuration files.
-
-
-## IV. NavRL ROS2 Deployment
-This section demonstrates an example of deploying NavRL with ROS2 and Isaac Sim using a Unitree Go2 quadruped robot. Ensure that your system meets the following requirements:
 - Ubuntu 22.04 LTS
 - ROS2 Humble
 
-Before get started, please install the simulator based on [this link](https://github.com/Zhefan-Xu/isaac-go2-ros2).
+更多细节请继续查看仓库中的 `ros2/` 目录与原始脚本说明。
 
-First, copy the ```ros2``` folder from this repository into your ros2 workspace.
-```
-cp -r ros2 /path/to/ros2_ws/src
-colcon build --symlink-install
-```
-Then, start the simulation and deploy NavRL navigation.
-```
-# Launch Isaac Go2 simulator
-conda activate isaaclab
-cd /path/to/isaac-go2-ros2
-python isaac-go2-ros2.py
+## 引用信息
 
-# Start the perception and safety module
-ros2 launch navigation_runner perception.launch.py
-ros2 launch navigation_runner safe_action.launch.py # optional
+如果原始 NavRL 工作对你的研究有帮助，请优先引用原论文：
 
-# Turn on Rviz2 visualization
-ros2 launch navigation_runner rviz.launch.py
-
-# Run the navigation launch
-conda activate NavRL
-ros2 launch navigation_runner navigation.launch.py
-```
-An Isaac Sim window will display the environment while an RViz window presents the data. Use RViz's ```2D Nav Goal``` tool to set the navigation target. The navigation example is shown in the following video:
-
-
-https://github.com/user-attachments/assets/4787f503-d8a3-4d7b-9d17-7057b2cff1eb
-
-Note that if you would like to deploy in a real robot with ```ros2 foxy```, please switch to ```ros2-foxy``` branch.
-```
-git checkout ros2-foxy
-```
-
-
-## V. Citation and Reference
-If our work is useful to your research, please consider citing our paper.
-```
+```bibtex
 @ARTICLE{NavRL,
   author={Xu, Zhefan and Han, Xinming and Shen, Haoyu and Jin, Hanyu and Shimada, Kenji},
-  journal={IEEE Robotics and Automation Letters}, 
-  title={NavRL: Learning Safe Flight in Dynamic Environments}, 
+  journal={IEEE Robotics and Automation Letters},
+  title={NavRL: Learning Safe Flight in Dynamic Environments},
   year={2025},
   volume={10},
   number={4},
   pages={3668-3675},
   keywords={Navigation;Robots;Collision avoidance;Training;Safety;Vehicle dynamics;Heuristic algorithms;Detectors;Autonomous aerial vehicles;Learning systems;Aerial systems: Perception and autonomy;reinforcement learning;collision avoidance},
-  doi={10.1109/LRA.2025.3546069}}
+  doi={10.1109/LRA.2025.3546069}
+}
 ```
 
-## VI. Acknowledgement
-The authors would like to express their sincere gratitude to Professor Kenji Shimada for his great support and all CERLAB UAV team members who contribute to the development of this research.
+## 致谢
 
-The Isaac Sim training component of the NavRL framework is built upon [OmniDrones](https://github.com/btx0424/OmniDrones).
-
-
-
-
-
-
-
-
-
+- 原始 NavRL 工作作者：Zhefan Xu, Xinming Han, Haoyu Shen, Hanyu Jin, Kenji Shimada
+- 上游 Isaac Sim 训练部分构建于 [`OmniDrones`](https://github.com/btx0424/OmniDrones)
+- 本仓库中的中文整理、实验展示材料与 Isaac-training 相关改动，为我基于开源项目所做的二次工程化整理
