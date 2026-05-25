@@ -21,6 +21,8 @@
 # SOFTWARE.
 
 
+import os
+
 from .single import Hover, Track, TrackV1
 from .platform import PlatformHover, PlatformFlyThrough
 from .inv_pendulum import InvPendulumHover, InvPendulumFlyThrough
@@ -31,12 +33,13 @@ from .dragon import DragonHover
 from .rearrange import Rearrange
 from .isaac_env import IsaacEnv
 
-try:
-    from .pinball import Pinball
-    from .forest import Forest
-except ModuleNotFoundError:
-    print(
-        "To run the environments which use `ContactSensor` and `RayCaster`,"
-        "please install Isaac Orbit (https://github.com/NVIDIA-Omniverse/orbit)."
-    )
+if os.environ.get("OMNI_DRONES_IMPORT_OPTIONAL_ENVS", "0") == "1":
+    try:
+        from .pinball import Pinball
+        from .forest import Forest
+    except ModuleNotFoundError:
+        print(
+            "To run the environments which use `ContactSensor` and `RayCaster`,"
+            "please install Isaac Orbit (https://github.com/NVIDIA-Omniverse/orbit)."
+        )
 

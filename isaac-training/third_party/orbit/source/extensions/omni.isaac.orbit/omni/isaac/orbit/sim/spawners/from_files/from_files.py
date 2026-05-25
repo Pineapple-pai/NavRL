@@ -142,12 +142,16 @@ def spawn_ground_plane(
     if cfg.physics_material is not None:
         cfg.physics_material.func(f"{prim_path}/physicsMaterial", cfg.physics_material)
         # Apply physics material to ground plane
-        collision_prim_path = prim_utils.get_prim_path(
-            prim_utils.get_first_matching_child_prim(
-                prim_path, predicate=lambda x: prim_utils.get_prim_type_name(x) == "Plane"
-            )
+        collision_prim = prim_utils.get_first_matching_child_prim(
+            prim_path, predicate=lambda x: prim_utils.get_prim_type_name(x) == "Plane"
         )
-        bind_physics_material(collision_prim_path, f"{prim_path}/physicsMaterial")
+        if collision_prim is not None:
+            collision_prim_path = prim_utils.get_prim_path(collision_prim)
+            bind_physics_material(collision_prim_path, f"{prim_path}/physicsMaterial")
+        else:
+            carb.log_warn(
+                f"Could not find Plane child prim under '{prim_path}'. Skipping ground physics material binding."
+            )
 
     # Scale only the mesh
     # Warning: This is specific to the default grid plane asset.
@@ -155,28 +159,35 @@ def spawn_ground_plane(
         # compute scale from size
         scale = (cfg.size[0] / 100.0, cfg.size[1] / 100.0, 1.0)
         # apply scale to the mesh
-        omni.kit.commands.execute(
-            "ChangeProperty",
-            prop_path=Sdf.Path(f"{prim_path}/Enviroment.xformOp:scale"),
-            value=scale,
-            prev=None,
-        )
+        try:
+            omni.kit.commands.execute(
+                "ChangeProperty",
+                prop_path=Sdf.Path(f"{prim_path}/Enviroment.xformOp:scale"),
+                value=scale,
+                prev=None,
+            )
+        except Exception as e:
+            carb.log_warn(f"Failed to scale ground plane mesh at '{prim_path}': {e}")
 
     # Change the color of the plane
     # Warning: This is specific to the default grid plane asset.
     if cfg.color is not None:
         prop_path = f"{prim_path}/Looks/theGrid/Shader.inputs:diffuse_tint"
         # change the color
-        omni.kit.commands.execute(
-            "ChangePropertyCommand",
-            prop_path=Sdf.Path(prop_path),
-            value=Gf.Vec3f(*cfg.color),
-            prev=None,
-            type_to_create_if_not_exist=Sdf.ValueTypeNames.Color3f,
-        )
+        try:
+            omni.kit.commands.execute(
+                "ChangePropertyCommand",
+                prop_path=Sdf.Path(prop_path),
+                value=Gf.Vec3f(*cfg.color),
+                prev=None,
+                type_to_create_if_not_exist=Sdf.ValueTypeNames.Color3f,
+            )
+        except Exception as e:
+            carb.log_warn(f"Failed to set ground plane color at '{prim_path}': {e}")
     # Remove the light from the ground plane
     # It isn't bright enough and messes up with the user's lighting settings
-    omni.kit.commands.execute("ToggleVisibilitySelectedPrims", selected_paths=[f"{prim_path}/SphereLight"])
+    if prim_utils.is_prim_path_valid(f"{prim_path}/SphereLight"):
+        omni.kit.commands.execute("ToggleVisibilitySelectedPrims", selected_paths=[f"{prim_path}/SphereLight"])
 
     # return the prim
     return prim_utils.get_prim_at_path(prim_path)

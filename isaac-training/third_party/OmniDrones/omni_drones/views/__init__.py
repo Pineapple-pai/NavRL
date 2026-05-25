@@ -22,6 +22,7 @@
 
 
 import torch
+import inspect
 from typing import Optional, Tuple, List
 from contextlib import contextmanager
 
@@ -65,17 +66,21 @@ class ArticulationView(_ArticulationView):
         shape: Tuple[int, ...] = (-1,),
     ) -> None:
         self.shape = shape
-        super().__init__(
-            prim_paths_expr,
-            name,
-            positions,
-            translations,
-            orientations,
-            scales,
-            visibilities,
-            reset_xform_properties,
-            enable_dof_force_sensors,
-        )
+        self._enable_dof_force_sensors = enable_dof_force_sensors
+        init_kwargs = {
+            "prim_paths_expr": prim_paths_expr,
+            "name": name,
+            "positions": positions,
+            "translations": translations,
+            "orientations": orientations,
+            "scales": scales,
+            "visibilities": visibilities,
+            "reset_xform_properties": reset_xform_properties,
+            "enable_dof_force_sensors": enable_dof_force_sensors,
+        }
+        base_params = inspect.signature(_ArticulationView.__init__).parameters
+        filtered_kwargs = {k: v for k, v in init_kwargs.items() if k in base_params}
+        super().__init__(**filtered_kwargs)
     
     @require_sim_initialized
     def initialize(self, physics_sim_view: omni.physics.tensors.SimulationView = None) -> None:
@@ -89,9 +94,16 @@ class ArticulationView(_ArticulationView):
             physics_sim_view.set_subspace_roots("/")
         carb.log_info("initializing view for {}".format(self._name))
         # TODO: add a callback to set physics view to None once stop is called
-        self._physics_view = physics_sim_view.create_articulation_view(
-            self._regex_prim_paths.replace(".*", "*"), self._enable_dof_force_sensors
-        )
+        create_params = inspect.signature(physics_sim_view.create_articulation_view).parameters
+        if "enable_dof_force_sensors" in create_params:
+            self._physics_view = physics_sim_view.create_articulation_view(
+                self._regex_prim_paths.replace(".*", "*"),
+                enable_dof_force_sensors=self._enable_dof_force_sensors,
+            )
+        else:
+            self._physics_view = physics_sim_view.create_articulation_view(
+                self._regex_prim_paths.replace(".*", "*")
+            )
         assert self._physics_view.is_homogeneous
         self._physics_sim_view = physics_sim_view
         if not self._is_initialized:
@@ -246,8 +258,10 @@ class ArticulationView(_ArticulationView):
             return None
 
     def get_world_poses(
-        self, env_indices: Optional[torch.Tensor] = None, clone: bool = True
+        self, env_indices: Optional[torch.Tensor] = None, clone: bool = True, **kwargs
     ) -> Tuple[torch.Tensor, torch.Tensor]:
+        if "usd" in kwargs:
+            return super().get_world_poses(clone=clone, **kwargs)
         indices = self._resolve_env_indices(env_indices)
         if self._physics_view is not None:
             with disable_warnings(self._physics_sim_view):
@@ -461,8 +475,10 @@ class RigidPrimView(_RigidPrimView):
         return self
 
     def get_world_poses(
-        self, env_indices: Optional[torch.Tensor] = None, clone: bool = True
+        self, env_indices: Optional[torch.Tensor] = None, clone: bool = True, **kwargs
     ) -> Tuple[torch.Tensor, torch.Tensor]:
+        if "usd" in kwargs:
+            return super().get_world_poses(clone=clone, **kwargs)
         indices = self._resolve_env_indices(env_indices)
         pos, rot = super().get_world_poses(indices, clone)
         return pos.unflatten(0, self.shape), rot.unflatten(0, self.shape)

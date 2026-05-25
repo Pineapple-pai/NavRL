@@ -83,6 +83,25 @@ class NavigationEnv(IsaacEnv):
         # drone_prim = self.drone.spawn(translations=[(0.0, 0.0, 1.0)])[0]
         drone_prim = self.drone.spawn(translations=[(0.0, 0.0, 2.0)])[0]
 
+        # Add bright color to drone for visibility
+        try:
+            from pxr import Usd, UsdGeom, Gf
+            import omni.kit.commands
+            drone_path = "/World/envs/env_0/Hummingbird_0"
+            stage = omni.usd.get_context().get_stage()
+            drone_prim = stage.GetPrimAtPath(drone_path)
+            if drone_prim.IsValid():
+                # Apply bright orange color to all mesh children
+                for child in drone_prim.GetAllChildren():
+                    if child.IsA(UsdGeom.Mesh):
+                        geom = UsdGeom.Mesh(child)
+                        geom.CreateDisplayColorAttr()
+                        geom.GetDisplayColorAttr().Set([Gf.Vec3f(1.0, 0.5, 0.0)])  # Bright orange
+                        geom.CreateDisplayOpacityAttr()
+                        geom.GetDisplayOpacityAttr().Set(1.0)  # Full opacity
+        except Exception as e:
+            print(f"[NavRL]: Warning: Failed to set drone color: {e}")
+
         # lighting
         light = AssetBaseCfg(
             prim_path="/World/light",
@@ -97,7 +116,12 @@ class NavigationEnv(IsaacEnv):
         
         # Ground Plane
         cfg_ground = sim_utils.GroundPlaneCfg(color=(0.1, 0.1, 0.1), size=(300., 300.))
-        cfg_ground.func("/World/defaultGroundPlane", cfg_ground, translation=(0, 0, 0.01))
+        ground_plane_path = "/World/defaultGroundPlane"
+        if not prim_utils.is_prim_path_valid(ground_plane_path):
+            try:
+                cfg_ground.func(ground_plane_path, cfg_ground, translation=(0, 0, 0.01))
+            except RuntimeError as e:
+                print(f"[NavRL]: Warning: Failed to create ground plane: {e}")
 
         self.map_range = [20.0, 20.0, 4.5]
 
@@ -134,7 +158,7 @@ class NavigationEnv(IsaacEnv):
             visual_material = None,
             max_init_terrain_level=None,
             collision_group=-1,
-            debug_vis=True,
+            debug_vis=False,
         )
         terrain_importer = TerrainImporter(terrain_cfg)
 
@@ -155,6 +179,11 @@ class NavigationEnv(IsaacEnv):
         self.dyn_obs_width_res = max_obs_width/float(N_w)
         dyn_obs_category_num = N_w * N_h
         self.dyn_obs_num_of_each_category = int(self.cfg.env_dyn.num_obstacles / dyn_obs_category_num)
+        if self.cfg.env_dyn.num_obstacles > 0 and self.dyn_obs_num_of_each_category == 0:
+            raise ValueError(
+                f"env_dyn.num_obstacles={self.cfg.env_dyn.num_obstacles} is too small for the current dynamic obstacle implementation. "
+                f"Please use 0 or a value >= {dyn_obs_category_num}."
+            )
         self.cfg.env_dyn.num_obstacles = self.dyn_obs_num_of_each_category * dyn_obs_category_num # in case of the roundup error
 
 
@@ -170,7 +199,11 @@ class NavigationEnv(IsaacEnv):
 
 
         # helper function to check pos validity for even distribution condition
+        protected_corridor_x = 10.0
+        protected_endcap_y = self.map_range[1] - self.cfg.env_dyn.local_range[1] - 2.0
         def check_pos_validity(prev_pos_list, curr_pos, adjusted_obs_dist):
+            if abs(curr_pos[0]) <= protected_corridor_x and abs(curr_pos[1]) >= protected_endcap_y:
+                return False
             for prev_pos in prev_pos_list:
                 if (np.linalg.norm(curr_pos - prev_pos) <= adjusted_obs_dist):
                     return False
@@ -348,62 +381,37 @@ class NavigationEnv(IsaacEnv):
     
     def reset_target(self, env_ids: torch.Tensor):
         if (self.training):
-            # decide which side
-            masks = torch.tensor([[1., 0., 1.], [1., 0., 1.], [0., 1., 1.], [0., 1., 1.]], dtype=torch.float, device=self.device)
-            shifts = torch.tensor([[0., 24., 0.], [0., -24., 0.], [24., 0., 0.], [-24., 0., 0.]], dtype=torch.float, device=self.device)
-            mask_indices = np.random.randint(0, masks.size(0), size=env_ids.size(0))
-            selected_masks = masks[mask_indices].unsqueeze(1)
-            selected_shifts = shifts[mask_indices].unsqueeze(1)
-
-
-            # generate random positions
-            target_pos = 48. * torch.rand(env_ids.size(0), 1, 3, dtype=torch.float, device=self.device) + (-24.)
-            heights = 0.5 + torch.rand(env_ids.size(0), dtype=torch.float, device=self.device) * (2.5 - 0.5)
-            target_pos[:, 0, 2] = heights# height
-            target_pos = target_pos * selected_masks + selected_shifts
-            
-            # apply target pos
+            target_pos = torch.zeros(env_ids.size(0), 1, 3, dtype=torch.float, device=self.device)
+            target_pos[:, 0, 0] = (torch.rand(env_ids.size(0), device=self.device) - 0.5) * 12.
+            target_pos[:, 0, 1] = 24.
+            target_pos[:, 0, 2] = 0.5 + torch.rand(env_ids.size(0), device=self.device) * 2.0
             self.target_pos[env_ids] = target_pos
-
-            # self.target_pos[:, 0, 0] = torch.linspace(-0.5, 0.5, self.num_envs) * 32.
-            # self.target_pos[:, 0, 1] = 24.
-            # self.target_pos[:, 0, 2] = 2.    
         else:
-            self.target_pos[:, 0, 0] = torch.linspace(-0.5, 0.5, self.num_envs) * 32.
-            self.target_pos[:, 0, 1] = -24.
-            self.target_pos[:, 0, 2] = 2.            
+            self.target_pos[env_ids, 0, 0] = torch.linspace(-0.5, 0.5, env_ids.size(0), device=self.device) * 16.
+            self.target_pos[env_ids, 0, 1] = 24.
+            self.target_pos[env_ids, 0, 2] = 2.
 
 
     def _reset_idx(self, env_ids: torch.Tensor):
         self.drone._reset_idx(env_ids, self.training)
         self.reset_target(env_ids)
-        if (self.training):
-            masks = torch.tensor([[1., 0., 1.], [1., 0., 1.], [0., 1., 1.], [0., 1., 1.]], dtype=torch.float, device=self.device)
-            shifts = torch.tensor([[0., 24., 0.], [0., -24., 0.], [24., 0., 0.], [-24., 0., 0.]], dtype=torch.float, device=self.device)
-            mask_indices = np.random.randint(0, masks.size(0), size=env_ids.size(0))
-            selected_masks = masks[mask_indices].unsqueeze(1)
-            selected_shifts = shifts[mask_indices].unsqueeze(1)
 
-            # generate random positions
-            pos = 48. * torch.rand(env_ids.size(0), 1, 3, dtype=torch.float, device=self.device) + (-24.)
-            heights = 0.5 + torch.rand(env_ids.size(0), dtype=torch.float, device=self.device) * (2.5 - 0.5)
-            pos[:, 0, 2] = heights# height
-            pos = pos * selected_masks + selected_shifts
-            
-            # pos = torch.zeros(len(env_ids), 1, 3, device=self.device)
-            # pos[:, 0, 0] = (env_ids / self.num_envs - 0.5) * 32.
-            # pos[:, 0, 1] = -24.
-            # pos[:, 0, 2] = 2.
+        if (self.training):
+            pos = torch.zeros(len(env_ids), 1, 3, device=self.device)
+            pos[:, 0, 0] = (torch.rand(env_ids.size(0), device=self.device) - 0.5) * 12.
+            pos[:, 0, 1] = -24.
+            pos[:, 0, 2] = 0.5 + torch.rand(env_ids.size(0), device=self.device) * 2.0
+
+            self.target_pos[env_ids, 0, 0] = (pos[:, 0, 0] + (torch.rand(env_ids.size(0), device=self.device) - 0.5) * 4.).clamp(min=-8., max=8.)
         else:
             pos = torch.zeros(len(env_ids), 1, 3, device=self.device)
-            pos[:, 0, 0] = (env_ids / self.num_envs - 0.5) * 32.
-            pos[:, 0, 1] = 24.
+            pos[:, 0, 0] = torch.linspace(-0.5, 0.5, env_ids.size(0), device=self.device) * 16.
+            pos[:, 0, 1] = -24.
             pos[:, 0, 2] = 2.
-        
+
         # Coordinate change: after reset, the drone's target direction should be changed
         self.target_dir[env_ids] = self.target_pos[env_ids] - pos
 
-        # Coordinate change: after reset, the drone's facing direction should face the current goal
         rpy = torch.zeros(len(env_ids), 1, 3, device=self.device)
         diff = self.target_pos[env_ids] - pos
         facing_yaw = torch.atan2(diff[..., 1], diff[..., 0])
@@ -559,6 +567,8 @@ class NavigationEnv(IsaacEnv):
         
         # d. smoothness reward for action smoothness
         penalty_smooth = (self.drone.vel_w[..., :3] - self.prev_drone_vel_w).norm(dim=-1)
+        penalty_angular = self.drone.vel_w[..., 3:].norm(dim=-1)
+        penalty_throttle = self.drone.throttle_difference
         
         # e. height penalty reward for flying unnessarily high or low
         penalty_height = torch.zeros(self.num_envs, 1, device=self.cfg.device)
@@ -572,12 +582,12 @@ class NavigationEnv(IsaacEnv):
         
         # Final reward calculation
         if (self.cfg.env_dyn.num_obstacles != 0):
-            self.reward = reward_vel + 1. + reward_safety_static * 1.0 + reward_safety_dynamic * 1.0 - penalty_smooth * 0.1 - penalty_height * 8.0
+            self.reward = reward_vel * 1.2 + 1. + reward_safety_static * 2. + reward_safety_dynamic * 2. - penalty_smooth * 0.1 - penalty_angular * 0.08 - penalty_throttle * 0.05 - penalty_height * 4.0
         else:
-            self.reward = reward_vel + 1. + reward_safety_static * 1.0 - penalty_smooth * 0.1 - penalty_height * 8.0
+            self.reward = reward_vel * 1.2 + 1. + reward_safety_static * 2. - penalty_smooth * 0.1 - penalty_angular * 0.08 - penalty_throttle * 0.05 - penalty_height * 4.0
 
         # Terminal reward
-        # self.reward[collision] -= 50. # collision
+        self.reward[collision] -= 100. # collision
 
         # Terminate Conditions
         reach_goal = (distance.squeeze(-1) < 0.5)

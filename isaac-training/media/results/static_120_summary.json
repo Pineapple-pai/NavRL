@@ -1,0 +1,14 @@
+{
+  "case_name": "static_120",
+  "checkpoint": "/home/p/NavRL_checkpoints/checkpoint_116000.pt",
+  "overrides": [
+    "env.num_obstacles=120",
+    "env_dyn.num_obstacles=0"
+  ],
+  "num_seeds": 2,
+  "return_mean": 2249.903564453125,
+  "episode_len_mean": 394.7749938964844,
+  "reach_goal_rate": 0.0,
+  "collision_rate": 0.10000000149011612,
+  "truncated_rate": 0.8999999761581421
+}

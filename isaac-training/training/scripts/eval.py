@@ -1,25 +1,59 @@
 import argparse
 import os
+import sys
+import importlib.util
 import hydra
 import datetime
 import wandb
 import torch
 from omegaconf import DictConfig, OmegaConf
-from omni.isaac.kit import SimulationApp
-from ppo import PPO
-from omni_drones.controllers import LeePositionController
-from omni_drones.utils.torchrl.transforms import VelController, ravel_composite
-from omni_drones.utils.torchrl import SyncDataCollector, EpisodeStats
-from torchrl.envs.transforms import TransformedEnv, Compose
-from utils import evaluate
-from torchrl.envs.utils import ExplorationType
+
+try:
+    from isaacsim import SimulationApp
+except Exception:
+    from omni.isaac.kit import SimulationApp
 
 
 FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "cfg")
 @hydra.main(config_path=FILE_PATH, config_name="train", version_base=None)
 def main(cfg):
+    script_root = os.path.abspath(os.path.dirname(__file__))
+    if script_root not in sys.path:
+        sys.path.insert(0, script_root)
+
+    orbit_ext_root = os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "third_party",
+            "orbit",
+            "source",
+            "extensions",
+            "omni.isaac.orbit",
+        )
+    )
+    if orbit_ext_root not in sys.path:
+        sys.path.insert(0, orbit_ext_root)
+
     # Simulation App
     sim_app = SimulationApp({"headless": cfg.headless, "anti_aliasing": 1})
+
+    local_utils_path = os.path.join(script_root, "utils.py")
+    if os.path.exists(local_utils_path):
+        utils_spec = importlib.util.spec_from_file_location("utils", local_utils_path)
+        if utils_spec is not None and utils_spec.loader is not None:
+            utils_module = importlib.util.module_from_spec(utils_spec)
+            utils_spec.loader.exec_module(utils_module)
+            sys.modules["utils"] = utils_module
+
+    from ppo import PPO
+    from omni_drones.controllers import LeePositionController
+    from omni_drones.utils.torchrl.transforms import VelController
+    from omni_drones.utils.torchrl import SyncDataCollector, EpisodeStats
+    from torchrl.envs.transforms import TransformedEnv, Compose
+    from utils import evaluate
+    from torchrl.envs.utils import ExplorationType
 
     # Use Wandb to monitor training
     if (cfg.wandb.run_id is None):
@@ -27,7 +61,7 @@ def main(cfg):
             project=cfg.wandb.project,
             name=f"{cfg.wandb.name}/{datetime.datetime.now().strftime('%m-%d_%H-%M')}",
             entity=cfg.wandb.entity,
-            config=cfg,
+            config=OmegaConf.to_container(cfg, resolve=True),
             mode=cfg.wandb.mode,
             id=wandb.util.generate_id(),
         )
@@ -36,7 +70,7 @@ def main(cfg):
             project=cfg.wandb.project,
             name=f"{cfg.wandb.name}/{datetime.datetime.now().strftime('%m-%d_%H-%M')}",
             entity=cfg.wandb.entity,
-            config=cfg,
+            config=OmegaConf.to_container(cfg, resolve=True),
             mode=cfg.wandb.mode,
             id=cfg.wandb.run_id,
             resume="must"
@@ -57,7 +91,12 @@ def main(cfg):
     # PPO Policy
     policy = PPO(cfg.algo, transformed_env.observation_spec, transformed_env.action_spec, cfg.device)
 
-    checkpoint = "/home/zhefan/catkin_ws/src/navigation_runner/scripts/ckpts/checkpoint_final.pt"
+    import glob
+    checkpoint_candidates = glob.glob("/home/p/NavRL_checkpoints/checkpoint_*.pt")
+    if not checkpoint_candidates:
+        raise FileNotFoundError("No checkpoint_*.pt found in /home/p/NavRL_checkpoints. Please train first.")
+    checkpoint = max(checkpoint_candidates, key=os.path.getmtime)
+    print(f"[NavRL]: Loading checkpoint: {checkpoint}")
     policy.load_state_dict(torch.load(checkpoint))
     
     # Episode Stats Collector
@@ -127,7 +166,10 @@ def main(cfg):
     # ckpt_path = os.path.join(run.dir, "checkpoint_final.pt")
     # torch.save(policy.state_dict(), ckpt_path)
     wandb.finish()
-    sim_app.close()
+    # Keep window open for manual inspection
+    print("\n[NavRL]: 回放完成，窗口保持打开。手动关闭窗口以退出。")
+    while sim_app.is_running():
+        sim_app.update()
 
 if __name__ == "__main__":
     main()

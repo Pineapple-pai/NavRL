@@ -1,0 +1,16 @@
+{
+  "case_name": "dynamic_120_16",
+  "checkpoint": "/home/p/NavRL_checkpoints/checkpoint_116000.pt",
+  "overrides": [
+    "env.num_obstacles=120",
+    "env_dyn.num_obstacles=16",
+    "env_dyn.vel_range=[0.2,0.4]",
+    "env_dyn.local_range=[3.0,3.0,3.0]"
+  ],
+  "num_seeds": 2,
+  "return_mean": 3301.5126953125,
+  "episode_len_mean": 389.1499938964844,
+  "reach_goal_rate": 0.0,
+  "collision_rate": 0.1250000037252903,
+  "truncated_rate": 0.875
+}
